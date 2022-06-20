@@ -10,7 +10,6 @@ class Post(BaseModel):
     title: str
     content: str
     published: bool = True # Default value True is applied if user doesn't provide one
-    rating: Optional[int] = None # Default value None is applied if user doesn't provide one
 
 my_posts = [{"title": "title of post 1", "content": "content of post 1", "id": 1}, {"title": "favourite foods", 
             "content": "I like pizza", "id": 2}]
@@ -71,7 +70,7 @@ def delete_post(id: int):
                             detail=f"post with {id} does not exist")
 
     my_posts.pop(index)
-    return Response(status_code=status.HTTP_204_NO_CONTENT) # When deleting, the good practice is return nothing
+    return Response(status_code=status.HTTP_204_NO_CONTENT) # When deleting, the good practice is to return nothing
 
 @app.put("/posts/{id}")
 def update_post(id: int, post: Post):
