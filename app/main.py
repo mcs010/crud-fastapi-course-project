@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import time
 
 app = FastAPI()
 
@@ -25,6 +26,7 @@ while True:
     except Exception as error:
         print("Connecting to database failed")
         print(f"Error: {error}")
+        time.sleep(2)
 
 my_posts = [{"title": "title of post 1", "content": "content of post 1", "id": 1}, {"title": "favourite foods", 
             "content": "I like pizza", "id": 2}]
