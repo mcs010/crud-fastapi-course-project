@@ -25,7 +25,7 @@ while True:
         break
     except Exception as error:
         print("Connecting to database failed")
-        print(f"Error: {error}")
+        print("Error: ", error)
         time.sleep(2)
 
 my_posts = [{"title": "title of post 1", "content": "content of post 1", "id": 1}, {"title": "favourite foods", 
@@ -58,10 +58,14 @@ def get_posts():
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
     """Create a new post"""
-    post_dict = post.dict()
-    post_dict['id'] = randrange(0, 1000000)
-    my_posts.append(post_dict)
-    return {"data": post_dict}
+    cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, 
+                  (post.title, post.content, post.published))
+    
+    new_post = cursor.fetchone()
+
+    conn.commit() # Push changes to database
+    
+    return {"data": new_post}
 
 @app.get("/posts/{id}")
 def get_post(id: int, response: Response): # Fast API validates it if it can be converted to the respective type, if so, 
