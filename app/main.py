@@ -1,7 +1,11 @@
 from typing import Optional
+from click import password_option
 from fastapi import FastAPI, Body, Response, status, HTTPException
 from pydantic import BaseModel
 from random import randrange
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import time
 
 app = FastAPI()
 
@@ -10,7 +14,19 @@ class Post(BaseModel):
     title: str
     content: str
     published: bool = True # Default value True is applied if user doesn't provide one
-    rating: Optional[int] = None # Default value None is applied if user doesn't provide one
+
+while True:
+    """Starts server if connection is ok, otherwise it gives us an error"""
+    try:
+        conn = psycopg2.connect(host="localhost", database="fastapi", user="postgres", password="admin", 
+                                cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
+        print("Database connection was succesfull!")
+        break
+    except Exception as error:
+        print("Connecting to database failed")
+        print("Error: ", error)
+        time.sleep(2)
 
 my_posts = [{"title": "title of post 1", "content": "content of post 1", "id": 1}, {"title": "favourite foods", 
             "content": "I like pizza", "id": 2}]
@@ -35,54 +51,67 @@ def root():
 @app.get("/posts")
 def get_posts():
     """Retrieve all stored posts"""
-    return {"data": my_posts}
+    cursor.execute("SELECT * FROM posts")
+    posts = cursor.fetchall()
+    return {"data": posts}
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
     """Create a new post"""
-    post_dict = post.dict()
-    post_dict['id'] = randrange(0, 1000000)
-    my_posts.append(post_dict)
-    return {"data": post_dict}
+    cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, 
+                  (post.title, post.content, post.published))
+    
+    new_post = cursor.fetchone()
+
+    conn.commit() # Push changes to database
+    
+    return {"data": new_post}
 
 @app.get("/posts/{id}")
-def get_post(id: int, response: Response): # Fast API validates it if it can be converted to the respective type, if so, 
+def get_post(id: int): # Fast API validates it if it can be converted to the respective type, if so, 
                                            # then it automatically converts to that type
     """Retrieve one specific post"""
-    post = find_post(id)
+    cursor.execute(""" SELECT * FROM posts WHERE id = %s """, (str(id)))
+    post = cursor.fetchone()
+
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail= f"post with id {id} was not found")
-        # response.status_code = status.HTTP_404_NOT_FOUND # If the post doesn't exist, returns 404 code, instead of 200
-        # return {"message": f"post with id {id} was not found"}
+
     return {"post_detail": post}
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
     """
     Delete a post
-    Find the index in the array that has required ID
-    my_posts.pop(index)
     """
-    index = find_index_post(id)
+    
+    cursor.execute(""" DELETE FROM posts WHERE id = %s RETURNING * """, (str(id)))
 
-    if index == None:
+    deleted_post = cursor.fetchone()
+
+    conn.commit()
+    
+    if deleted_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"post with {id} does not exist")
 
-    my_posts.pop(index)
-    return Response(status_code=status.HTTP_204_NO_CONTENT) # When deleting, the good practice is return nothing
+    return Response(status_code=status.HTTP_204_NO_CONTENT) # When deleting, the good practice is to return nothing
 
 @app.put("/posts/{id}")
 def update_post(id: int, post: Post):
     """Update a post"""
-    index = find_index_post(id)
+    
+    cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s
+                   WHERE id = %s RETURNING * """, 
+                  (post.title, post.content, post.published, str(id)))
 
-    if index == None:
+    updated_post = cursor.fetchone()
+
+    conn.commit()    
+
+    if updated_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"post with {id} does not exist")
     
-    post_dict = post.dict()     # Gets the updated data from frontend and casts it to python dict
-    post_dict["id"] = id        # Adds the id key to the updated post
-    my_posts[index] = post_dict # Replaces the stored post (at 'index' value) to the updated post 
-    return {"data": post_dict}
+    return {"data": updated_post}
