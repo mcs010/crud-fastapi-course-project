@@ -68,15 +68,16 @@ def create_posts(post: Post):
     return {"data": new_post}
 
 @app.get("/posts/{id}")
-def get_post(id: int, response: Response): # Fast API validates it if it can be converted to the respective type, if so, 
+def get_post(id: int): # Fast API validates it if it can be converted to the respective type, if so, 
                                            # then it automatically converts to that type
     """Retrieve one specific post"""
-    post = find_post(id)
+    cursor.execute(""" SELECT * FROM posts WHERE id = %s """, (str(id)))
+    post = cursor.fetchone()
+
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail= f"post with id {id} was not found")
-        # response.status_code = status.HTTP_404_NOT_FOUND # If the post doesn't exist, returns 404 code, instead of 200
-        # return {"message": f"post with id {id} was not found"}
+
     return {"post_detail": post}
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
