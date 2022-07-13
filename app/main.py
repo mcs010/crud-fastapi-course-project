@@ -1,13 +1,26 @@
 from typing import Optional
 from click import password_option
-from fastapi import FastAPI, Body, Response, status, HTTPException
+from fastapi import FastAPI, Body, Response, status, HTTPException, Depends
 from pydantic import BaseModel
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
+from sqlalchemy.orm import Session
+from . import models
+from .database import engine, SessionLocal
+
+models.Base.metadata.create_all(bind = engine)
 
 app = FastAPI()
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 """Schema model"""
 class Post(BaseModel):
@@ -47,6 +60,10 @@ def find_index_post(id):
 def root():
     """Shows the message at api index/home page"""
     return {"message": "Hello World"}
+
+@app.get("/sqlalchemy")
+def test_posts(db: Session = Depends(get_db)):
+    return {"status": "success"}
 
 @app.get("/posts")
 def get_posts():
