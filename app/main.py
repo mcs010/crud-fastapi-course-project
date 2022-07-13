@@ -84,8 +84,6 @@ def get_post(id: int): # Fast API validates it if it can be converted to the res
 def delete_post(id: int):
     """
     Delete a post
-    Find the index in the array that has required ID
-    my_posts.pop(index)
     """
     
     cursor.execute(""" DELETE FROM posts WHERE id = %s RETURNING * """, (str(id)))
@@ -103,13 +101,17 @@ def delete_post(id: int):
 @app.put("/posts/{id}")
 def update_post(id: int, post: Post):
     """Update a post"""
-    index = find_index_post(id)
+    
+    cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s
+                   WHERE id = %s RETURNING * """, 
+                  (post.title, post.content, post.published, str(id)))
 
-    if index == None:
+    updated_post = cursor.fetchone()
+
+    conn.commit()    
+
+    if updated_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"post with {id} does not exist")
     
-    post_dict = post.dict()     # Gets the updated data from frontend and casts it to python dict
-    post_dict["id"] = id        # Adds the id key to the updated post
-    my_posts[index] = post_dict # Replaces the stored post (at 'index' value) to the updated post 
-    return {"data": post_dict}
+    return {"data": updated_post}
