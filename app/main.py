@@ -61,10 +61,13 @@ def test_posts(db: Session = Depends(get_db)):
     return {"data": posts}
 
 @app.get("/posts")
-def get_posts():
+def get_posts(db: Session = Depends(get_db)):
     """Retrieve all stored posts"""
-    cursor.execute("SELECT * FROM posts")
-    posts = cursor.fetchall()
+    # cursor.execute("SELECT * FROM posts")
+    # posts = cursor.fetchall()
+
+    posts = db.query(models.Post).all()
+
     return {"data": posts}
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
