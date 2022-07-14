@@ -71,14 +71,20 @@ def get_posts(db: Session = Depends(get_db)):
     return {"data": posts}
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post):
+def create_posts(post: Post, db: Session = Depends(get_db)):
     """Create a new post"""
-    cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, 
-                  (post.title, post.content, post.published))
+    # cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, 
+    #               (post.title, post.content, post.published))
     
-    new_post = cursor.fetchone()
+    # new_post = cursor.fetchone()
 
-    conn.commit() # Push changes to database
+    # conn.commit() # Push changes to database
+
+    new_post = models.Post(**post.dict()) # "**" dumps the unpacked content from the dictionary "post"
+
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
     
     return {"data": new_post}
 
