@@ -89,11 +89,14 @@ def create_posts(post: Post, db: Session = Depends(get_db)):
     return {"data": new_post}
 
 @app.get("/posts/{id}")
-def get_post(id: int): # Fast API validates it if it can be converted to the respective type, if so, 
+def get_post(id: int, db: Session = Depends(get_db)): # Fast API validates it if it can be converted to the respective type, if so, 
                                            # then it automatically converts to that type
     """Retrieve one specific post"""
-    cursor.execute(""" SELECT * FROM posts WHERE id = %s """, (str(id)))
-    post = cursor.fetchone()
+    
+    # cursor.execute(""" SELECT * FROM posts WHERE id = %s """, (str(id)))
+    # post = cursor.fetchone()
+
+    post = db.query(models.Post).filter(models.Post.id == id).first()
 
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
