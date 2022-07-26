@@ -105,20 +105,25 @@ def get_post(id: int, db: Session = Depends(get_db)): # Fast API validates it if
     return {"post_detail": post}
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int):
+def delete_post(id: int, db: Session = Depends(get_db)):
     """
     Delete a post
     """
     
-    cursor.execute(""" DELETE FROM posts WHERE id = %s RETURNING * """, (str(id)))
+    # cursor.execute(""" DELETE FROM posts WHERE id = %s RETURNING * """, (str(id)))
 
-    deleted_post = cursor.fetchone()
+    # deleted_post = cursor.fetchone()
 
-    conn.commit()
+    # conn.commit()
+
+    post_query = db.query(models.Post).filter(models.Post.id == id)
     
-    if deleted_post == None:
+    if post_query.first() == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"post with {id} does not exist")
+
+    post_query.delete(synchronize_session=False)
+    db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT) # When deleting, the good practice is to return nothing
 
