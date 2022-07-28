@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from click import password_option
 from fastapi import FastAPI, Body, Response, status, HTTPException, Depends
 from pydantic import BaseModel
@@ -47,7 +47,7 @@ def root():
     """Shows the message at api index/home page"""
     return {"message": "Hello World"}
 
-@app.get("/posts")
+@app.get("/posts", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     """Retrieve all stored posts"""
     # cursor.execute("SELECT * FROM posts")
