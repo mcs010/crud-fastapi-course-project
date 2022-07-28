@@ -47,13 +47,6 @@ def root():
     """Shows the message at api index/home page"""
     return {"message": "Hello World"}
 
-@app.get("/sqlalchemy")
-def test_posts(db: Session = Depends(get_db)):
-
-    posts = db.query(models.Post).all()
-
-    return {"data": posts}
-
 @app.get("/posts")
 def get_posts(db: Session = Depends(get_db)):
     """Retrieve all stored posts"""
