@@ -65,7 +65,7 @@ def get_posts(db: Session = Depends(get_db)):
     return {"data": posts}
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: schemas.Post, db: Session = Depends(get_db)):
+def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     """Create a new post"""
     # cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, 
     #               (post.title, post.content, post.published))
@@ -122,7 +122,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT) # When deleting, the good practice is to return nothing
 
 @app.put("/posts/{id}")
-def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_db)):
+def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db)):
     """Update a post"""
     
     # cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s
