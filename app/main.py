@@ -75,7 +75,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     
     return new_post
 
-@app.get("/posts/{id}")
+@app.get("/posts/{id}", response_model=schemas.Post)
 def get_post(id: int, db: Session = Depends(get_db)): # Fast API validates it if it can be converted to the respective type, if so, 
                                            # then it automatically converts to that type
     """Retrieve one specific post"""
@@ -114,7 +114,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
     return Response(status_code=status.HTTP_204_NO_CONTENT) # When deleting, the good practice is to return nothing
 
-@app.put("/posts/{id}")
+@app.put("/posts/{id}", response_model=schemas.Post)
 def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db)):
     """Update a post"""
     
