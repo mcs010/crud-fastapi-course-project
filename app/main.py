@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from click import password_option
 from fastapi import FastAPI, Body, Response, status, HTTPException, Depends
 from pydantic import BaseModel
@@ -7,18 +7,12 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
 from sqlalchemy.orm import Session
-from . import models
+from . import models, schemas
 from .database import engine, get_db
 
 models.Base.metadata.create_all(bind = engine)
 
 app = FastAPI()
-
-"""Schema model"""
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True # Default value True is applied if user doesn't provide one
 
 while True:
     """Starts server if connection is ok, otherwise it gives us an error"""
@@ -53,14 +47,7 @@ def root():
     """Shows the message at api index/home page"""
     return {"message": "Hello World"}
 
-@app.get("/sqlalchemy")
-def test_posts(db: Session = Depends(get_db)):
-
-    posts = db.query(models.Post).all()
-
-    return {"data": posts}
-
-@app.get("/posts")
+@app.get("/posts", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     """Retrieve all stored posts"""
     # cursor.execute("SELECT * FROM posts")
@@ -68,10 +55,10 @@ def get_posts(db: Session = Depends(get_db)):
 
     posts = db.query(models.Post).all()
 
-    return {"data": posts}
+    return posts
 
-@app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post, db: Session = Depends(get_db)):
+@app.post("/posts", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
+def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     """Create a new post"""
     # cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, 
     #               (post.title, post.content, post.published))
@@ -86,9 +73,9 @@ def create_posts(post: Post, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_post)
     
-    return {"data": new_post}
+    return new_post
 
-@app.get("/posts/{id}")
+@app.get("/posts/{id}", response_model=schemas.Post)
 def get_post(id: int, db: Session = Depends(get_db)): # Fast API validates it if it can be converted to the respective type, if so, 
                                            # then it automatically converts to that type
     """Retrieve one specific post"""
@@ -102,7 +89,7 @@ def get_post(id: int, db: Session = Depends(get_db)): # Fast API validates it if
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail= f"post with id {id} was not found")
 
-    return {"post_detail": post}
+    return post
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db)):
@@ -127,8 +114,8 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
     return Response(status_code=status.HTTP_204_NO_CONTENT) # When deleting, the good practice is to return nothing
 
-@app.put("/posts/{id}")
-def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
+@app.put("/posts/{id}", response_model=schemas.Post)
+def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db)):
     """Update a post"""
     
     # cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s
@@ -151,4 +138,4 @@ def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
 
     db.commit()
     
-    return {"data": post_query.first()}
+    return post_query.first()
