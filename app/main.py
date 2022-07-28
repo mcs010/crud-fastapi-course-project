@@ -7,18 +7,12 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
 from sqlalchemy.orm import Session
-from . import models
+from . import models, schemas
 from .database import engine, get_db
 
 models.Base.metadata.create_all(bind = engine)
 
 app = FastAPI()
-
-"""Schema model"""
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True # Default value True is applied if user doesn't provide one
 
 while True:
     """Starts server if connection is ok, otherwise it gives us an error"""
@@ -71,7 +65,7 @@ def get_posts(db: Session = Depends(get_db)):
     return {"data": posts}
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post, db: Session = Depends(get_db)):
+def create_posts(post: schemas.Post, db: Session = Depends(get_db)):
     """Create a new post"""
     # cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, 
     #               (post.title, post.content, post.published))
@@ -128,7 +122,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT) # When deleting, the good practice is to return nothing
 
 @app.put("/posts/{id}")
-def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
+def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_db)):
     """Update a post"""
     
     # cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s
